@@ -5,7 +5,7 @@
 void PLL_Init(unsigned long clock)
 {
 	long div2; int Lsb; int result;
-	if((clock <= 3125000)||(clock >= 80000000)) return;
+	if((clock < 3125000)||(clock > 80000000)) return;
 	result = PLLCLOCK/clock;
 	if(result&0x01)
 	{

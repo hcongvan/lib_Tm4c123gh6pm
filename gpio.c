@@ -43,7 +43,7 @@ void GPIO_DinInit(GPIOA_Type * gpio,unsigned char pin,unsigned char pin_dir)
 	gpio->DIR 	|= pin_dir;
 	gpio->AFSEL &= ~pin;
 	gpio->AMSEL &= ~pin;
-	gpio->PDR		|= pin;
+	gpio->PUR		|= pin;
 	gpio->DEN  	|= pin;
 }
 void GPIO_AFInit(GPIOA_Type * gpio, unsigned char pin, unsigned char function)
@@ -64,24 +64,26 @@ void GPIO_AFInit(GPIOA_Type * gpio, unsigned char pin, unsigned char function)
 	}
 	gpio->DEN |= pin;
 }
-void GPIO_DigDisable(GPIOA_Type * gpio,unsigned char pin)
+void GPIO_Disable(GPIOA_Type * gpio,unsigned char pin)
 {
 	gpio->DEN &= ~pin;
 }
-void GPIO_DigEnable(GPIOA_Type * gpio,unsigned char pin)
+void GPIO_Enable(GPIOA_Type * gpio,unsigned char pin)
 {
 	gpio->DEN |= pin;
 }
 void GPIO_IntConfig(GPIOA_Type * gpio, unsigned char pin, unsigned char sense, unsigned char event, unsigned char edge)
 {
+	__disable_irq();
 	gpio->DEN &= ~pin;
 	gpio->IS	|= sense;
 	gpio->IEV	|= event;
 	gpio->IBE	|= edge;
 	gpio->ICR	|= pin;
 	gpio->IM	|= pin;
-	gpio->DEN	|= pin;
 	GPIO_IntEnable((unsigned) gpio);
+	gpio->DEN	|= pin;
+	__enable_irq();
 }
 
 void GPIO_IntEnable(unsigned port)
@@ -90,27 +92,27 @@ void GPIO_IntEnable(unsigned port)
 	{
 		case GPIOA_BASE:
 			NVIC_Enable(GPIOA_IRQn);
-			NVIC_SetPrio(GPIOA_IRQn,7);
+			NVIC_SetPrio(GPIOA_IRQn,1);
 			break;
 		case GPIOB_BASE:
 			NVIC_Enable(GPIOB_IRQn);
-			NVIC_SetPrio(GPIOB_IRQn,7);
+			NVIC_SetPrio(GPIOB_IRQn,1);
 			break;
 		case GPIOC_BASE:
 			NVIC_Enable(GPIOC_IRQn);
-			NVIC_SetPrio(GPIOC_IRQn,7);
+			NVIC_SetPrio(GPIOC_IRQn,1);
 			break;
 		case GPIOD_BASE:
 			NVIC_Enable(GPIOD_IRQn);
-			NVIC_SetPrio(GPIOD_IRQn,7);
+			NVIC_SetPrio(GPIOD_IRQn,1);
 			break;
 		case GPIOE_BASE:
 			NVIC_Enable(GPIOE_IRQn);
-			NVIC_SetPrio(GPIOE_IRQn,7);
+			NVIC_SetPrio(GPIOE_IRQn,1);
 			break;
 		case GPIOF_BASE:
 			NVIC_Enable(GPIOF_IRQn);
-			NVIC_SetPrio(GPIOF_IRQn,7);
+			NVIC_SetPrio(GPIOF_IRQn,1);
 			break;
 	}
 }
@@ -128,4 +130,8 @@ int GPIO_Unlock(GPIOA_Type * gpio, unsigned char pin)
 	gpio->LOCK = 0x4C4F434B;
 	unsigned commit = (unsigned long)gpio + 0x524;
 	*(volatile unsigned long *)commit	|= pin;
+}
+void GPIO_UseDMA(GPIOA_Type * gpio,uint32_t pin)
+{
+	gpio->DMACTL |= pin;
 }

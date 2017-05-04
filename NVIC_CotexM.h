@@ -54,6 +54,7 @@ static inline void NVIC_Enable(int IRQ)
 	if ((int32_t)(IRQ) >= 0)
   {
     _NVIC->ISER[(((uint32_t)(int32_t)IRQ) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)(int32_t)IRQ) & 0x1FUL));
+		_NVIC->ICPR[(((uint32_t)(int32_t)IRQ) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)(int32_t)IRQ) & 0x1FUL));
   }
 }
 static inline void NVIC_Disable(int IRQ)

@@ -1,57 +1,76 @@
-#include "TM4C123.h"
 #include "udma.h"
-uint8_t psctlbase[256] __attribute__(( aligned(1024) )); 
-uint32_t ch, c;
-void uDMA_Init(uint32_t channel)
-{
-	int i;
-	for(i=0;i<256;i++)
-	{
-		psctlbase[i] = 0;
-	}
-	SYSCTL->RCGCDMA = 1;
-	UDMA->CFG = 1;
-	UDMA->CTLBASE = (uint32_t)psctlbase;
-	
-	UDMA->PRIOCLR |= channel;
-	UDMA->ALTCLR  |= channel;
-	UDMA->USEBURSTCLR |= channel;
-	UDMA->REQMASKCLR |= channel;
-	
-}
 
-void uDMA_Tranfer(uint32_t channel, uint32_t * src, uint32_t * des , uint32_t count)
+uint32_t pstable[256] __attribute__((aligned(1024)));
+//#define CHNSW		(UDMA_CHN0_SW0|UDMA_CHN0_SW1|UDMA_CHN1_SW0|UDMA_CHN1_SW1|UDMA_CHN2_SW0|UDMA_CHN2_SW1|UDMA_CHN3_SW0|UDMA_CHN3_SW1|	\\
+//								UDMA_CHN3_SW2|UDMA_CHN4_SW0|UDMA_CHN4_SW1|UDMA_CHN2_SW2|UDMA_CHN5_SW0|UDMA_CHN5_SW1|UDMA_CHN6_SW0|UDMA_CHN6_SW1|							\\
+//								UDMA_CHN7_SW0|UDMA_CHN7_SW1|UDMA_CHN8_SW0|UDMA_CHN8_SW1|UDMA_CHN9_SW0|UDMA_CHN9_SW1|UDMA_CHN10_SW0|UDMA_CHN11_SW0|							\\
+//								UDMA_CHN12_SW0|UDMA_CHN12_SW1|UDMA_CHN13_SW0|UDMA_CHN13_SW1|UDMA_CHN14_SW0|UDMA_CHN15_SW0|UDMA_CHN16_SW0|UDMA_CHN16_SW1|				\\
+//								UDMA_CHN17_SW0|UDMA_CHN17_SW1|UDMA_CHN18_SW0|UDMA_CHN19_SW0|UDMA_CHN19_SW1|UDMA_CHN20_SW0|UDMA_CHN20_SW1|UDMA_CHN20_SW2|				\\
+//								UDMA_CHN21_SW0|UDMA_CHN21_SW1|UDMA_CHN21_SW2|UDMA_CHN22_SW0|UDMA_CHN22_SW1|UDMA_CHN22_SW2|UDMA_CHN22_SW3|UDMA_CHN23_SW0|				\\
+//								UDMA_CHN23_SW1|UDMA_CHN23_SW2|UDMA_CHN23_SW3|UDMA_CHN24_SW0|UDMA_CHN24_SW1|UDMA_CHN25_SW0|UDMA_CHN25_SW1|UDMA_CHN26_SW0|				\\
+//								UDMA_CHN26_SW1|UDMA_CHN26_SW2|UDMA_CHN27_SW0|UDMA_CHN27_SW1|UDMA_CHN27_SW2|UDMA_CHN28_SW0|UDMA_CHN28_SW1|UDMA_CHN28_SW2|				\\
+//								UDMA_CHN28_SW3|UDMA_CHN29_SW0|UDMA_CHN29_SW1|UDMA_CHN29_SW2|UDMA_CHN29_SW3|UDMA_CHN30_SW0|UDMA_CHN30_SW0|UDMA_CHN30_SW1|				\\
+//								UDMA_CHN30_SW2|UDMA_CHN30_SW3|UDMA_CHN30_SW4)																																										\\
+								
+void UDMA_Init(uint32_t * pctl,uint32_t chn,uint8_t is_alt,uint8_t is_burst,uint8_t prio)
 {
-	psctlbase[channel] = (uint32_t) src+count*4-1;
-	psctlbase[channel+1] = (uint32_t) des+count*4-1;
-	psctlbase[channel+2] = 0xAA00D002+((count-1)<<4);
-	
-	UDMA->ENASET |= channel;
-	UDMA->SWREQ |= channel;
-}
-void uDMA_Tranfer_PingPong(uint32_t channel, uint32_t * prisrc,uint32_t * prides,uint32_t * altsrc,uint32_t * altdes,uint32_t count)
-{
-	psctlbase[channel] = (uint32_t) prisrc+count*4-1;
-	psctlbase[channel+1] = (uint32_t) prides+count*4-1;
-	psctlbase[channel+2] = 0xAA00D003+((count-1)<<4);
-	psctlbase[channel+3] = (uint32_t) altsrc+count*4-1+0x200;
-	psctlbase[channel+4] = (uint32_t) altdes+count*4-1+0x200;
-	psctlbase[channel+5] = 0xAA00D003+((count-1)<<4);
-	
-	ch = channel;
-	c = count;
-	UDMA->ENASET |= channel;
-	NVIC_EnableIRQ(UDMA_IRQn);
-	NVIC_SetPriority(UDMA_IRQn,(7<<21));
-}
-void UDMA_Handler(void)
-{
-	if(!(psctlbase[ch+2]&0x00003FF0))
+	int i,x;
+	int chnags,chnmap;
+	chnags = chn & 0xFF;
+	chnmap = (chn & 0xFF00)>>8U;
+	SYSCTL->RCGCDMA = 0x01;
+	for(i =0;i<100;i++);
+	UDMA->CFG							= 0x01;
+	UDMA->CTLBASE					= (uint32_t)(pctl);
+	if(prio)
+		UDMA->PRIOSET				|= (1UL<<chnags);
+	else
+		UDMA->PRIOCLR				|= (1UL<<chnags);
+	if(is_alt)
+		UDMA->ALTSET				|= (1UL<<chnags);
+	else
+		UDMA->ALTCLR				|= (1UL<<chnags);
+	if(is_burst)
+		UDMA->USEBURSTSET		|= (1UL<<chnags);
+	else
+		UDMA->USEBURSTCLR		|= (1UL<<chnags);
+	UDMA->REQMASKCLR			|= (1UL<<chnags);
+	UDMA->CHASGN					|= (1UL<<chnags);
+	x = chnags/8;
+	switch(x)
 	{
-		psctlbase[ch+2] = 0xAA00D003+((c-1)<<4);
+		case 0:
+			UDMA->CHMAP0	|= chnmap;
+			break;
+		case 1:
+			UDMA->CHMAP1	|= chnmap;	
+			break;
+		case 2:
+			UDMA->CHMAP2	|= chnmap;
+			break;
+		case 3:
+			UDMA->CHMAP3	|= chnmap;
+			break;
 	}
-	if(!(psctlbase[ch+5]&0x00003FF0))
-	{
-		psctlbase[ch+5] = 0xAA00D003+((c-1)<<4);
-	}
+}
+void UDMA_Transfer(void * src,void * dst,uint32_t ctr,uint32_t chn,uint32_t size)
+{
+	int chagns;
+	chagns = chn & 0xFF;
+	UDMA_ctltable * ptr;
+	ptr = (UDMA_ctltable *) UDMA->CTLBASE;
+	if(ctr & (3UL<<28))
+		ptr[chagns].src = (uint32_t) src;
+	else
+		ptr[chagns].src = (uint32_t) src + size;
+	if(ctr & (3UL << 31))
+			ptr[chagns].dst = (uint32_t) dst ;
+	else
+		ptr[chagns].dst = (uint32_t) dst + size;
+	ptr[chagns].ctr =  (ctr)|(size<<4U);
+	
+//	if(chn|CHNSW)
+		
+	UDMA->ENASET |= (1UL<<chagns);
+	
 }

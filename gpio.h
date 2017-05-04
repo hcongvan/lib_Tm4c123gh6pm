@@ -52,8 +52,8 @@
 extern void GPIO_AinInit(GPIOA_Type * gpio,unsigned char pin);
 extern void GPIO_DinInit(GPIOA_Type * gpio,unsigned char pin,unsigned char pin_dir);
 extern void GPIO_AFInit(GPIOA_Type * gpio, unsigned char pin, unsigned char function);
-extern void GPIO_DigDisable(GPIOA_Type * gpio,unsigned char pin);
-extern void GPIO_DigEnable(GPIOA_Type * gpio,unsigned char pin);
+extern void GPIO_Disable(GPIOA_Type * gpio,unsigned char pin);
+extern void GPIO_Enable(GPIOA_Type * gpio,unsigned char pin);
 extern void GPIO_IntEnable(unsigned port);
 extern void GPIO_IntConfig(GPIOA_Type * gpio, unsigned char pin, unsigned char sense, unsigned char event, unsigned char edge);
 extern int GPIO_Unlock(GPIOA_Type * gpio, unsigned char pin);
